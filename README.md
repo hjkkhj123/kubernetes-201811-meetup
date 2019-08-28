@@ -411,7 +411,7 @@ taint "node-role.kubernetes.io/master:" not found
 Kubernetes 를 편하게 사용하기 위해 Dashboard 를 설치합니다.
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-beta1/aio/deploy/recommended.yaml
 
 secret/kubernetes-dashboard-certs created
 serviceaccount/kubernetes-dashboard created
@@ -462,7 +462,7 @@ clusterrolebinding.rbac.authorization.k8s.io/admin-user created
 설치한 Dashboard 상태를 확인합니다.
 
 ```bash
-kubectl get svc -n kube-system
+kubectl get svc -n kubernetes-dashboard
 
 NAME                   TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)         AGE
 calico-typha           ClusterIP   10.100.9.93     <none>        5473/TCP        2m53s
@@ -473,7 +473,7 @@ kubernetes-dashboard   ClusterIP   10.105.107.14   <none>        443/TCP        
 외부에서 접속하기 위해 **Dashboard Service Type** 을 **NodePort** 로 변경합니다.
 
 ```bash
-kubectl edit svc -n kube-system kubernetes-dashboard
+kubectl edit svc -n kubernetes-dashboard kubernetes-dashboard
 ```
 
 vi 에디터 화면에서 **nodePort** 를 추가하고 **type** 에 **NodePort** 를 지정합니다.
@@ -493,7 +493,7 @@ spec:
 ```
 
 ```bash
-$ kubectl get svc -n kube-system kubernetes-dashboard
+$ kubectl get svc -n kubernetes-dashboard kubernetes-dashboard
 
 NAME                   TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)         AGE
 kubernetes-dashboard   NodePort   10.105.107.14   <none>        443:30000/TCP   3m54s
