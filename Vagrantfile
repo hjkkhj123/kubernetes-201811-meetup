@@ -4,12 +4,12 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/bionic64"
   config.vm.box_check_update = false
-  node_subnet = "10.254.1"
+  node_subnet = "192.168.0"
 
   (1..3).each do |i|
     config.vm.define "k8s-#{i}" do |node|
       node.vm.hostname = "k8s-#{i}"
-      node.vm.network "private_network", ip: "#{node_subnet}.#{i + 1}"
+      node.vm.network "public_network", ip: "#{node_subnet}.#{i + 80}", bridge: "enp5s0"
 
       attached_disk_a = "disk-k8s-#{i}-a.vdi"
       attached_disk_b = "disk-k8s-#{i}-b.vdi"
@@ -32,7 +32,7 @@ Vagrant.configure("2") do |config|
           vb.customize [
             'createhd', '--filename', attached_disk_b,
             '--variant', 'Fixed',
-            '--size', 10 * 1024]
+            '--size', 500 * 1024]
         end
 
         vb.customize [
@@ -56,7 +56,7 @@ EOF
         sudo usermod -aG docker vagrant
         sudo systemctl enable docker.service
         sudo sed -i '/k8s/d' /etc/hosts
-        sudo echo "#{node_subnet}.#{i + 1} k8s-#{i}" | sudo tee -a /etc/hosts
+        sudo echo "#{node_subnet}.#{i + 80} k8s-#{i}" | sudo tee -a /etc/hosts
 
         sudo mkfs.ext4 /dev/sdc
         sudo mkdir /media/data
