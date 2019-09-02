@@ -67,7 +67,7 @@ vagrant box add ubuntu/bionic64
 github 저장소에 실습을 진행하면서 사용할 파일을 디렉토리별로 구분하여 저장해두었습니다.
 
 ```bash
-git clone https://github.com/chanshik/kubernetes-201811-meetup.git
+git clone https://github.com/hjkkhj123/kubernetes-201811-meetup.git
 cd kubernetes-201811-meetup
 kubernetes-201811-meetup$ 
 ```
@@ -80,9 +80,9 @@ VM 에 할당한 IP 와 역할은 다음과 같습니다.
 
 | Node  | IP         | Role   |
 | ----- | ---------- | ------ |
-| k8s-1 | 10.254.1.2 | Master |
-| k8s-2 | 10.254.1.3 | Worker |
-| k8s-3 | 10.254.1.4 | Wokrer |
+| k8s-1 | 192.168.0.81 | Master |
+| k8s-2 | 192.168.0.82 | Worker |
+| k8s-3 | 192.168.0.83 | Wokrer |
 
 
 
@@ -99,12 +99,12 @@ VM 에 할당한 IP 와 역할은 다음과 같습니다.
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/bionic64"
   config.vm.box_check_update = false
-  node_subnet = "10.254.1"
+  node_subnet = "192.168.0"
 
   (1..3).each do |i|
     config.vm.define "k8s-#{i}" do |node|
       node.vm.hostname = "k8s-#{i}"
-      node.vm.network "private_network", ip: "#{node_subnet}.#{i + 1}"
+      node.vm.network "public_network", ip: "#{node_subnet}.#{i + 80}", bridge: "enp5s0"
 
       attached_disk_a = "disk-k8s-#{i}-a.vdi"
       attached_disk_b = "disk-k8s-#{i}-b.vdi"
@@ -127,7 +127,7 @@ Vagrant.configure("2") do |config|
           vb.customize [
             'createhd', '--filename', attached_disk_b,
             '--variant', 'Fixed',
-            '--size', 10 * 1024]
+            '--size', 500 * 1024]
         end
 
         vb.customize [
@@ -152,7 +152,7 @@ EOF'
         sudo usermod -aG docker vagrant
 
         sudo sed -i '/k8s/d' /etc/hosts
-        sudo echo "#{node_subnet}.#{i + 1} k8s-#{i}" | sudo tee -a /etc/hosts
+        sudo echo "#{node_subnet}.#{i + 80} k8s-#{i}" | sudo tee -a /etc/hosts
 
         sudo mkfs.ext4 /dev/sdc
         sudo mkdir /media/data
@@ -201,10 +201,10 @@ sudo apt install -y docker.io kubelet kubeadm kubectl ntp nfs-kernel-server
 sudo usermod -aG docker vagrant
 
 sudo sed -i '/k8s/d' /etc/hosts
-sudo echo "10.254.1.2 k8s-1" | sudo tee -a /etc/hosts
+sudo echo "192.168.0.81 k8s-1" | sudo tee -a /etc/hosts
 ```
 
-초기화 단계를 진행할 때  `sudo echo "10.254.1.2 k8s-1" | sudo tee -a /etc/hosts` 명령은 각 VM 에 접속해서  노드 이름과 IP 를 개별로 지정해서 실행합니다.
+초기화 단계를 진행할 때  `sudo echo "192.168.0.81 k8s-1" | sudo tee -a /etc/hosts` 명령은 각 VM 에 접속해서  노드 이름과 IP 를 개별로 지정해서 실행합니다.
 
 
 
@@ -270,7 +270,7 @@ Master node 에서 **kubeadm init** 명령을 실행하여 클러스터 초기�
 
 ```bash
 sudo swapoff -a
-sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --apiserver-advertise-address=10.254.1.2
+sudo kubeadm init --pod-network-cidr=10.10.0.0/16 --apiserver-advertise-address=192.168.0.81
 
 [init] using Kubernetes version: v1.12.2
 [preflight] running pre-flight checks
@@ -305,7 +305,8 @@ Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
 You can now join any number of machines by running the following on each node
 as root:
 
-  kubeadm join 10.254.1.2:6443 --token dzjclo.a8d0kjwcc64r7kvs --discovery-token-ca-cert-hash sha256:ce7c94f7863dbc1ad8d32028cb5388e4ea47a12959317d035b722e2a4fb3e5f3
+  sudo kubeadm join 192.168.0.81:6443 --token sa8lk0.p0n67tple9r6eycn \
+    --discovery-token-ca-cert-hash sha256:ef9af38477ad7bd37dc42afe5ea3c88985977de3fac6949352f84bc397497a3a
 ```
 
 
@@ -318,14 +319,16 @@ Master node 초기화 이후에는 추가하려는 노드에서 **kubeadm join**
 
 ```bash
 sudo swapoff -a
-sudo kubeadm join 10.254.1.2:6443 --token s9qd0j.beetbemlhmmx1etd --discovery-token-ca-cert-hash sha256:573bf08c800f2c9736d9b1b8a66421777dcd9e8991a2b9e0d7612c248bcdcdc5
+sudo kubeadm join 192.168.0.81:6443 --token sa8lk0.p0n67tple9r6eycn \
+    --discovery-token-ca-cert-hash sha256:ef9af38477ad7bd37dc42afe5ea3c88985977de3fac6949352f84bc397497a3a
 ```
 
 **@k8s-3**
 
 ```bash
 sudo swapoff -a
-sudo kubeadm join 10.254.1.2:6443 --token s9qd0j.beetbemlhmmx1etd --discovery-token-ca-cert-hash sha256:573bf08c800f2c9736d9b1b8a66421777dcd9e8991a2b9e0d7612c248bcdcdc5
+sudo kubeadm join 192.168.0.81:6443 --token sa8lk0.p0n67tple9r6eycn \
+    --discovery-token-ca-cert-hash sha256:ef9af38477ad7bd37dc42afe5ea3c88985977de3fac6949352f84bc397497a3a
 ```
 
 
@@ -363,23 +366,11 @@ clusterrolebinding.rbac.authorization.k8s.io/calico-node created
 ```
 
 ```bash
-kubectl apply -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
+wget https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
 
-configmap/calico-config created
-service/calico-typha created
-deployment.apps/calico-typha created
-poddisruptionbudget.policy/calico-typha created
-daemonset.extensions/calico-node created
-serviceaccount/calico-node created
-customresourcedefinition.apiextensions.k8s.io/felixconfigurations.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/bgppeers.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/bgpconfigurations.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/ippools.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/hostendpoints.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/clusterinformations.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/globalnetworkpolicies.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/globalnetworksets.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/networkpolicies.crd.projectcalico.org created
+sed -i 's/192.168.0.0/10.10.0.0/' calico.yaml
+
+kubectl apply -f calico.yaml
 ```
 
 ```bash
@@ -448,6 +439,9 @@ subjects:
 - kind: ServiceAccount
   name: admin-user
   namespace: kube-system
+- kind: ServiceAccount
+  name: kubernetes-dashboard
+  namespace: kubernetes-dashboard
 ```
 
 위 두 파일을 이용하여 Dashboard 에 접속할 때 사용할 계정을 생성합니다.
@@ -498,6 +492,7 @@ $ kubectl get svc -n kubernetes-dashboard kubernetes-dashboard
 NAME                   TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)         AGE
 kubernetes-dashboard   NodePort   10.105.107.14   <none>        443:30000/TCP   3m54s
 ```
+인증서 관련 이슈 발생시 [이 블로그](https://medium.com/@essem_dev/kubernetes-dashboard%EC%97%90-ingress%EB%A5%BC-%ED%86%B5%ED%95%B4-%EC%A0%91%EC%86%8D%ED%95%98%EA%B8%B0-d78c0d5bc615)를 참조하여 HTTP인증으로 변경합니다.
 
 웹 브라우져를 통해 Dashboard 에 접속합니다.
 
@@ -510,34 +505,33 @@ kubernetes-dashboard   NodePort   10.105.107.14   <none>        443:30000/TCP   
 Dashboard 에 접속하기 위해 관리자 Token 을 가져옵니다.
 
 ```bash
-kubectl get secret -n kube-system                                                     
+kubectl get secret -n kubernetes-dashboard
 
-NAME                                             TYPE                                  DATA   AGE
-admin-user-token-9m6zn                           kubernetes.io/service-account-token   3      115s
-attachdetach-controller-token-htnpk              kubernetes.io/service-account-token   3      5m38s
-bootstrap-signer-token-6ztxm                     kubernetes.io/service-account-token   3      5m52s
-bootstrap-token-11h5df                           bootstrap.kubernetes.io/token         7      5m52s
-calico-node-token-2kxw5                          kubernetes.io/service-account-token   3      2m43s
-certificate-controller-token-6lvgq               kubernetes.io/service-account-token   3      5m52s
+NAME                               TYPE                                  DATA   AGE
+default-token-z7trf                kubernetes.io/service-account-token   3      4h42m
+kubernetes-dashboard-certs         Opaque                                0      4h42m
+kubernetes-dashboard-csrf          Opaque                                1      4h42m
+kubernetes-dashboard-key-holder    Opaque                                2      4h42m
+kubernetes-dashboard-token-d75gp   kubernetes.io/service-account-token   3      4h42m
 ...
 ```
 
 ```bash
-kubectl describe secret admin-user-token-9m6zn -n kube-system                         
+kubectl describe secret kubernetes-dashboard-token-d75gp -n kubernetes-dashboard
 
-Name:         admin-user-token-9m6zn
-Namespace:    kube-system
+Name:         kubernetes-dashboard-token-d75gp
+Namespace:    kubernetes-dashboard
 Labels:       <none>
-Annotations:  kubernetes.io/service-account.name: admin-user
-              kubernetes.io/service-account.uid: 407a5a06-ed68-11e8-a94d-02c44c503abe
+Annotations:  kubernetes.io/service-account.name: kubernetes-dashboard
+              kubernetes.io/service-account.uid: 5a77f4f6-6a78-409f-ae4f-767e248e2a26
 
 Type:  kubernetes.io/service-account-token
 
 Data
 ====
-namespace:  11 bytes
-token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJhZG1pbi11c2VyLXRva2VuLTltNnpuIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImFkbWluLXVzZXIiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiI0MDdhNWEwNi1lZDY4LTExZTgtYTk0ZC0wMmM0NGM1MDNhYmUiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZS1zeXN0ZW06YWRtaW4tdXNlciJ9.dhPeoOsMCwmvwNFWFPE6Gn16afd0CpY22uOzNliEgYyALoZndU-j2r62gm3W697UzfatWg5Ezj7m52mq3wKkhr1tHZeEUXHBjmRulOh_sbtJJKBOACGDl9yhWSbhb8F5NMfWhqBnpFwKws9uL3mapiN5Pks8z4yky-pZf3SMpFNtvo_FtoynNbnxo_kalOhvMeqNrpZrJZBGCCCFR9Z9uDu3kaDqsVrfNrMZE0Yx6Rk8TIma9_gibSr57va8XSLFa35P31UwFTHiafVFyOSyvp9ZHkVw2Me-V_SYYQmfjZjjBXr8QZSeEjp8mTJMD5R_NInkl37DtVCG6uf8xUuzjw
 ca.crt:     1025 bytes
+namespace:  20 bytes
+token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlcm5ldGVzLWRhc2hib2FyZCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJrdWJlcm5ldGVzLWRhc2hib2FyZC10b2tlbi1kNzVncCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50Lm5hbWUiOiJrdWJlcm5ldGVzLWRhc2hib2FyZCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjVhNzdmNGY2LTZhNzgtNDA5Zi1hZTRmLTc2N2UyNDhlMmEyNiIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDprdWJlcm5ldGVzLWRhc2hib2FyZDprdWJlcm5ldGVzLWRhc2hib2FyZCJ9.q77MXOoLcRY8HpzXCF65hEznZ_077jwnGt9fJmUGUYKlir9pAPOyrJDROkvHi80GFlYDdM0ZYpoxvBfQx8MVwjuPD2WrACXmFT46ey__EUT0ODeq32I1-nW5Kymgx5Dq9F8aAbfGi8pmZby2SCcd2ZyCt5ywpBwf3gt_M7YZxjsdMgOoPGEybz81Ucs3WfdLNIJh5U5wkej9tQujd26pQwcqsyMiAkuFLFjiF0EbeBrQ1ci0nMxw7PINnrM-iUqkCeGDYYbPyp-E3HgtEAKKC9mbhzlGnEehEmuLFyw5roXj6EbByxTkHZCPdkClomAscq80z3SBr2Rwx8BZgYNIpQ
 ```
 
 마지막 token: 밑에 있는 문자열을 이용해 Dashboard 에 접속할 수 있습니다.
@@ -839,7 +833,7 @@ data:
     - name: default
       protocol: layer2
       addresses:
-      - 10.254.1.150-10.254.1.250
+      - 192.168.0.90-192.168.0.250
 ```
 
 ```bash
@@ -855,7 +849,7 @@ configmap/config created
 앞에서는 Dashboard 를 NodePort 로 외부에 개방했는데, LoadBalancer 를 이용해 미리 지정한  외부에서 접속 가능하도록 변경해봅니다.
 
 ```bash
-kubectl edit svc kubernetes-dashboard -n kube-system
+kubectl edit svc kubernetes-dashboard -n kubernetes-dashboard
 ```
 
 ```yaml
@@ -878,10 +872,12 @@ spec:
 IP 가 제대로 할당되었는지 확인합니다.
 
 ```bash
-kubectl get svc -n kube-system
+kubectl get svc -n kubernetes-dashboard
 
-NAME                   TYPE           CLUSTER-IP       EXTERNAL-IP    PORT(S)         AGE
-kubernetes-dashboard   LoadBalancer   10.101.69.172    10.254.1.150   443:30000/TCP   14h
+NAME                        TYPE           CLUSTER-IP       EXTERNAL-IP    PORT(S)        AGE
+dashboard-metrics-scraper   ClusterIP      10.108.196.197   <none>         8000/TCP       4h45m
+kubernetes-dashboard        LoadBalancer   10.99.95.99      192.168.0.90   80:30459/TCP   4h45m
+
 ```
 
 ![dashboard-lb](./assets/dashboard-lb.png)
