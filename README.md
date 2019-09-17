@@ -817,7 +817,7 @@ deployment.apps/controller created
 
 ## Configure LoadBalancer IP range
 
-LoadBalancer 로 사용할 IP 대역을 설정 파일 안에 기술하여 지정할 수 있습니다. 여기에서는 10.254.1.150 ~ 10.254.1.250 을 외부에서 접속할 때 사용할 IP 대역으로 할당하였습니다.
+LoadBalancer 로 사용할 IP 대역을 설정 파일 안에 기술하여 지정할 수 있습니다. 여기에서는 192.168.0.90 ~ 192.168.0.250 을 외부에서 접속할 때 사용할 IP 대역으로 할당하였습니다.
 
 **metallb/layer2-config.yaml**
 
@@ -1055,15 +1055,15 @@ service/redis-k8s-redis-ha-svc created
 kubectl get svc -n redis
 NAME                     TYPE           CLUSTER-IP      EXTERNAL-IP    PORT(S)                          AGE
 redis-k8s-redis-ha       ClusterIP      None            <none>         6379/TCP,26379/TCP               11h
-redis-k8s-redis-ha-svc   LoadBalancer   10.110.125.91   10.254.1.151   6379:32696/TCP,26379:30121/TCP   10s
+redis-k8s-redis-ha-svc   LoadBalancer   10.110.125.91   192.168.0.91   6379:32696/TCP,26379:30121/TCP   10s
 ```
 
 ```bash
-redis-cli -h 10.254.1.151
+redis-cli -h 192.168.0.91
 
-10.254.1.151:6379> SET cluster.name "kubernetes"
+192.168.0.91:6379> SET cluster.name "kubernetes"
 OK
-10.254.1.151:6379> GET cluster.name
+192.168.0.91:6379> GET cluster.name
 "kubernetes"
 ```
 
@@ -1232,7 +1232,7 @@ kubectl get svc -n rook-ceph
 NAME                                    TYPE           CLUSTER-IP       EXTERNAL-IP    PORT(S)          AGE
 rook-ceph-mgr                           ClusterIP      10.107.101.123   <none>         9283/TCP         17m
 rook-ceph-mgr-dashboard                 ClusterIP      10.111.254.202   <none>         7000/TCP         17m
-rook-ceph-mgr-dashboard-external-http   LoadBalancer   10.111.106.222   10.254.1.152   7000:32346/TCP   11m
+rook-ceph-mgr-dashboard-external-http   LoadBalancer   10.111.106.222   192.168.0.92   7000:32346/TCP   11m
 rook-ceph-mon-a                         ClusterIP      10.110.197.249   <none>         6790/TCP         18m
 rook-ceph-mon-b                         ClusterIP      10.96.137.141    <none>         6790/TCP         18m
 rook-ceph-mon-c                         ClusterIP      10.107.126.92    <none>         6790/TCP         17m
@@ -1510,15 +1510,15 @@ kubectl get svc
 
 NAME         TYPE           CLUSTER-IP       EXTERNAL-IP    PORT(S)          AGE
 kubernetes   ClusterIP      10.96.0.1        <none>         443/TCP          4h21m
-minio-svc    LoadBalancer   10.101.22.31     10.254.1.153   9000:32719/TCP   3m46s
-mysql        LoadBalancer   10.99.254.138    10.254.1.154   3306:31821/TCP   9s
+minio-svc    LoadBalancer   10.101.22.31     192.168.0.93   9000:32719/TCP   3m46s
+mysql        LoadBalancer   10.99.254.138    192.168.0.94   3306:31821/TCP   9s
 nginx-svc    NodePort       10.101.189.208   <none>         80:31000/TCP     45m
 ```
 
 IP 주소를 확인하고 mysql client 를 이용해 접속합니다.
 
 ```bash
-mysql -uroot -p -h 10.254.1.154
+mysql -uroot -p -h 192.168.0.94
 
 Enter password:
 Welcome to the MySQL monitor.  Commands end with ; or \g.
@@ -1567,7 +1567,7 @@ drwxr-xr-x 1 root root    2 Nov 18 15:15 minio
 MySQL 에 접속하여 사용할 데이터베이스를 생성합니다.
 
 ```bash
-mysql -uroot -p -h 10.254.1.154
+mysql -uroot -p -h 192.168.0.94
 
 Enter password:
 Welcome to the MySQL monitor.  Commands end with ; or \g.
@@ -1667,7 +1667,7 @@ ghost   1         1         1            1           6m9s
 MySQL 에 테이블이 제대로 생성되었는지 확인해봅니다.
 
 ```bash
-mysql -uroot -p -h 10.254.1.154
+mysql -uroot -p -h 192.168.0.94
 
 Enter password:
 Welcome to the MySQL monitor.  Commands end with ; or \g.
